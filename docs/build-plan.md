@@ -12,7 +12,7 @@
 
 ## Assumptions and fixed decisions
 
-- **Stack:** Kotlin 2.3.x, Gradle wrapper 8.x, Compose Multiplatform (latest stable, 1.11.x at planning time), kotlinx-serialization, kotlinx-datetime, kotlinx-coroutines. All versions in `gradle/libs.versions.toml`; verify current stable at chunk time. Copy the pinned-version rationale comments from `use-case-kmp/gradle/libs.versions.toml` (AGP 8.x pin especially).
+- **Stack:** Kotlin 2.3.x, Gradle wrapper 9.5.x (drift from the original "8.x": Chunk 1 adopted the sibling repo's proven Gradle 9.5.1 wrapper), Compose Multiplatform (latest stable, 1.11.x at planning time), kotlinx-serialization, kotlinx-datetime, kotlinx-coroutines. All versions in `gradle/libs.versions.toml`; verify current stable at chunk time. Copy the pinned-version rationale comments from `use-case-kmp/gradle/libs.versions.toml` (AGP 8.x pin especially).
 - **Modules:** `:core-sim` (pure KMP library — games, market model, simulation, statistics; zero Compose deps) and `:composeApp` (all UI, shared `commonMain` Compose code; per-platform source sets only for entry points). `iosApp/` Xcode wrapper added in Chunk 8.
 - **KMP targets:** `core-sim`: `jvm()`, `androidTarget()`, `iosArm64()`, `iosSimulatorArm64()`, `iosX64()`, `wasmJs { browser() }`. `composeApp`: same minus `iosX64` (known Compose material3 variant conflict — see use-case-kmp plan drift). Desktop = Compose for Desktop on JVM.
 - **Money as `Long` cents** (avoid floating-point money). Odds/probability math in `Double`.
@@ -45,6 +45,8 @@
 **Exit criteria:** `./gradlew build` green (iOS-link exclusions as documented in use-case-kmp are acceptable); `:composeApp:run` opens the desktop window; `:composeApp:assembleDebug` and `:composeApp:wasmJsBrowserDistribution` green; `:composeApp:linkDebugFrameworkIosSimulatorArm64` green; common test passes.
 
 **Commit:** `feat: multiplatform walking skeleton builds on all targets`
+
+**Verified on this machine (2026-07-17):** plain `./gradlew build` green with **no iOS-link exclusions** (the iOS 26.5 simulator runtime installed during use-case-kmp Chunk 10 covers `iosSimulatorArm64Test` here too); `:core-sim:jvmTest` (1 common test), `:composeApp:assembleDebug`, `:composeApp:wasmJsBrowserDistribution`, and `:composeApp:linkDebugFrameworkIosSimulatorArm64` all green; `:composeApp:run` opened the "Lotz" desktop window rendering the `core-sim` placeholder (`Money`, screenshot-verified). Drift: Gradle wrapper 9.5.1 (not 8.x — see Assumptions); Kotlin 2.3.21 (newest 2.3.x; upstream 2.4.x stable exists but is unproven against Compose MP 1.11.1, see the version-catalog comment); untracked `local.properties` with `sdk.dir=~/Library/Android/sdk` is required for the Android targets.
 
 ---
 

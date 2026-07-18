@@ -1,0 +1,33 @@
+[versions]
+# Checked against Maven Central / Google Maven on 2026-07-17.
+# Re-verify at the start of each chunk rather than trusting this file's recency.
+# Kotlin held to the 2.3.x line (build-plan fixed decision): 2.4.x is stable upstream
+# but unproven against Compose MP 1.11.1 on this toolchain; 2.3.21 is the newest 2.3.x.
+kotlin = "2.3.21"
+# Pinned to the 8.x line, not the newer 9.x: AGP 9 dropped support for applying
+# com.android.library/application alongside org.jetbrains.kotlin.multiplatform's
+# androidTarget() (it now wants the separate com.android.kotlin.multiplatform.library
+# plugin instead). Revisit once Compose Multiplatform documents that migration.
+agp = "8.13.2"
+composeMultiplatform = "1.11.1"
+kotlinxSerialization = "1.11.0"
+kotlinxDatetime = "0.8.0"
+kotlinxCoroutines = "1.11.0"
+androidxActivity = "1.11.0"
+
+[libraries]
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
+
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidxActivity" }
+
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+
+[plugins]
+kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
+composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+androidApplication = { id = "com.android.application", version.ref = "agp" }
+androidLibrary = { id = "com.android.library", version.ref = "agp" }
