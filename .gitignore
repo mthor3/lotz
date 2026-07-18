@@ -1,0 +1,31 @@
+# Gradle
+.gradle/
+build/
+**/build/
+
+# Kotlin / KMP
+.kotlin/
+kotlin-js-store/
+
+# Android
+local.properties
+*.apk
+*.aab
+captures/
+
+# Xcode / iOS
+iosApp/build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.hmap
+*.ipa
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Session memory (local tooling)
+.remember/
