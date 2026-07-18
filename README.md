@@ -63,6 +63,10 @@ See [game rules](docs/game-rules.md) for the rule sources and modeling decisions
 
 Every run has a seed. Enter one in the configuration screen to replay the exact same single run; batches derive each run's seed from one master seed, so the aggregate result is replayable too. Leave the field blank to generate a seed—the results screen records the generated value for later reuse.
 
+## Public release materials
+
+The release-ready app icons, store listing copy, privacy policy, and submission checklist are in [`docs/release`](docs/release/). Lotz is an educational simulator only: it does not sell tickets, accept wagers, or predict lottery numbers.
+
 ## Verify the project
 
 ```sh
