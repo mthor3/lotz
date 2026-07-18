@@ -6,6 +6,7 @@ import kotlinx.browser.document
 
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
+    document.getElementById("loading")?.remove()
     ComposeViewport(document.body!!) {
         App()
     }

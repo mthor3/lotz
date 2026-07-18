@@ -169,23 +169,25 @@ fun ConfigurationScreen(
                         onClick = { onConfigChange { it.copy(stopKind = StopKind.Duration) } },
                     )
                     if (config.stopKind == StopKind.Duration) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedTextField(
                                 value = config.durationText,
                                 onValueChange = { value -> onConfigChange { it.copy(durationText = value) } },
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.fillMaxWidth(),
                                 label = { Text("Duration") },
                                 supportingText = { FieldHelp(validation.errors[ConfigFields.DURATION]) },
                                 isError = ConfigFields.DURATION in validation.errors,
                                 singleLine = true,
                             )
-                            Column(Modifier.weight(1f)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 RadioChoice(
+                                    modifier = Modifier.weight(1f),
                                     selected = config.durationUnit == DurationUnit.Months,
                                     title = "Months",
                                     onClick = { onConfigChange { it.copy(durationUnit = DurationUnit.Months) } },
                                 )
                                 RadioChoice(
+                                    modifier = Modifier.weight(1f),
                                     selected = config.durationUnit == DurationUnit.Years,
                                     title = "Years",
                                     onClick = { onConfigChange { it.copy(durationUnit = DurationUnit.Years) } },
@@ -203,16 +205,16 @@ fun ConfigurationScreen(
                 }
 
                 Section(title = "Run mode") {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         ModeCard(
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.fillMaxWidth(),
                             selected = config.runMode == RunMode.Single,
                             title = "Single run",
                             subtitle = "One detailed outcome",
                             onClick = { onConfigChange { it.copy(runMode = RunMode.Single) } },
                         )
                         ModeCard(
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.fillMaxWidth(),
                             selected = config.runMode == RunMode.Batch,
                             title = "Monte Carlo",
                             subtitle = "Aggregate many runs",
@@ -346,9 +348,14 @@ private fun GameCard(game: GameDefinition, selected: Boolean, onClick: () -> Uni
 }
 
 @Composable
-private fun RadioChoice(selected: Boolean, title: String, onClick: () -> Unit) {
+private fun RadioChoice(
+    selected: Boolean,
+    title: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 4.dp),
+        modifier = modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         RadioButton(selected = selected, onClick = onClick)
