@@ -88,6 +88,7 @@ fun ConfigurationScreen(
                 }
 
                 Section(title = "Build your strategy") {
+                    val entries = config.entriesText.toIntOrNull()
                     OutlinedTextField(
                         value = config.entriesText,
                         onValueChange = { value -> onConfigChange { it.copy(entriesText = value) } },
@@ -105,7 +106,14 @@ fun ConfigurationScreen(
                                 ) { Text("▼") }
                             }
                         },
-                        supportingText = { FieldHelp(validation.errors[ConfigFields.ENTRIES]) },
+                        supportingText = {
+                            Column {
+                                entries?.takeIf { it in 1..MAX_ENTRIES_PER_DRAWING }?.let {
+                                    Text("Jackpot odds for this drawing: ${formatOddsForEntries(game, it)}")
+                                }
+                                FieldHelp(validation.errors[ConfigFields.ENTRIES])
+                            }
+                        },
                         isError = ConfigFields.ENTRIES in validation.errors,
                         singleLine = true,
                     )
@@ -341,8 +349,7 @@ fun ConfigurationScreen(
                     ) {
                         Text(
                             "${request.strategy.entriesPerDrawing} ${if (request.strategy.entriesPerDrawing == 1) "entry" else "entries"} · " +
-                                "${formatMoney(request.strategy.costPerDrawingCents)} each played drawing · " +
-                                "Jackpot odds ${formatOddsForEntries(request.strategy.game, request.strategy.entriesPerDrawing)}",
+                                "${formatMoney(request.strategy.costPerDrawingCents)} each played drawing",
                             modifier = Modifier.padding(14.dp),
                             style = MaterialTheme.typography.bodyMedium,
                         )
