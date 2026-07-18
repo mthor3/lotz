@@ -191,4 +191,35 @@ class SimulationEngineTest {
         assertTrue(result.drawingsPlayed * 2 <= result.timeline.size + 1)
         assertEquals(result.drawingsPlayed * Games.powerball.pricePerPlayCents, result.totalSpentCents)
     }
+
+    @Test
+    fun randomOnceResolvesToOneValidPickAndIsReproduciblePerSeed() = runTest {
+        val strategy = PlayerStrategy(
+            game = Games.powerball,
+            entriesPerDrawing = 1,
+            numberChoice = NumberChoice.RandomOnce,
+            stopCondition = StopCondition.Duration(DatePeriod(days = 30)),
+        )
+        val a = SimulationEngine.run(strategy, seed = 21L, startDate = startDate)
+        val b = SimulationEngine.run(strategy, seed = 21L, startDate = startDate)
+
+        val pick = a.fixedNumbers
+        assertTrue(pick != null, "RandomOnce must expose the resolved pick")
+        assertEquals(Games.powerball.mainPick, pick.mainNumbers.size)
+        assertTrue(pick.mainNumbers.all { it in 1..Games.powerball.mainPool })
+        assertTrue(pick.bonusNumber!! in 1..Games.powerball.bonusPool)
+        assertEquals(pick, b.fixedNumbers)
+        assertEquals(a.totalWonCents, b.totalWonCents)
+    }
+
+    @Test
+    fun quickPickRunsExposeNoFixedNumbers() = runTest {
+        val strategy = PlayerStrategy(
+            game = Games.powerball,
+            entriesPerDrawing = 1,
+            stopCondition = StopCondition.Duration(DatePeriod(days = 14)),
+        )
+        val result = SimulationEngine.run(strategy, seed = 3L, startDate = startDate)
+        assertEquals(null, result.fixedNumbers)
+    }
 }

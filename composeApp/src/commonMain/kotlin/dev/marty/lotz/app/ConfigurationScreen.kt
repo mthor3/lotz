@@ -86,7 +86,7 @@ fun ConfigurationScreen(
                     }
                 }
 
-                Section(title = "Build your strategy", subtitle = "Quick Pick numbers are generated for every entry") {
+                Section(title = "Build your strategy") {
                     OutlinedTextField(
                         value = config.entriesText,
                         onValueChange = { value -> onConfigChange { it.copy(entriesText = value) } },
@@ -95,6 +95,23 @@ fun ConfigurationScreen(
                         supportingText = { FieldHelp(validation.errors[ConfigFields.ENTRIES]) },
                         isError = ConfigFields.ENTRIES in validation.errors,
                         singleLine = true,
+                    )
+
+                    Text("Number picking", style = MaterialTheme.typography.titleSmall)
+                    RadioChoice(
+                        selected = config.pickMode == PickMode.NewEachDraw,
+                        title = "New random numbers every drawing",
+                        onClick = { onConfigChange { it.copy(pickMode = PickMode.NewEachDraw) } },
+                    )
+                    RadioChoice(
+                        selected = config.pickMode == PickMode.SameEveryDraw,
+                        title = "Same random numbers, picked once at the start",
+                        onClick = { onConfigChange { it.copy(pickMode = PickMode.SameEveryDraw) } },
+                    )
+                    Text(
+                        "Either way the odds are identical — every combination is equally likely each drawing.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
 
                     if (game.options.isNotEmpty()) {
@@ -155,9 +172,14 @@ fun ConfigurationScreen(
                             singleLine = true,
                         )
                         CheckChoice(
-                            checked = config.reinvestWinnings,
+                            checked = config.reinvestWinnings && resolvedTrackWinnings(config),
+                            enabled = resolvedTrackWinnings(config),
                             title = "Reinvest winnings",
-                            subtitle = "Prizes extend the available budget",
+                            subtitle = if (resolvedTrackWinnings(config)) {
+                                "Prizes extend the available budget"
+                            } else {
+                                "Requires winnings tracking"
+                            },
                             onClick = { onConfigChange { it.copy(reinvestWinnings = !it.reinvestWinnings) } },
                         )
                     }
@@ -202,6 +224,22 @@ fun ConfigurationScreen(
                         subtitle = "Unbounded cost and time; use cancel to stop the run",
                         onClick = { onConfigChange { it.copy(stopKind = StopKind.UntilJackpot) } },
                     )
+
+                    Text("What to track", style = MaterialTheme.typography.titleSmall)
+                    CheckChoice(
+                        checked = resolvedTrackWinnings(config),
+                        title = "Track winnings and jackpot market",
+                        subtitle = "Off: runs are near-instant; only spend, match counts, and the jackpot hit are simulated",
+                        onClick = {
+                            onConfigChange { it.copy(trackWinnings = !resolvedTrackWinnings(it)) }
+                        },
+                    )
+                    CheckChoice(
+                        checked = config.trackSpend,
+                        title = "Track money spent",
+                        subtitle = "Show what the strategy costs over the run",
+                        onClick = { onConfigChange { it.copy(trackSpend = !it.trackSpend) } },
+                    )
                 }
 
                 Section(title = "Run mode") {
@@ -233,7 +271,19 @@ fun ConfigurationScreen(
                         )
                     }
 
-                    if (validation.expectedBatchDrawings != null) {
+                    if (
+                        config.runMode == RunMode.Batch && config.stopKind == StopKind.UntilJackpot &&
+                        !resolvedTrackWinnings(config)
+                    ) {
+                        Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = MaterialTheme.shapes.medium) {
+                            Text(
+                                "Winnings tracking is off — this batch computes instantly.",
+                                modifier = Modifier.padding(14.dp),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
+                    if (validation.expectedBatchDrawings != null && validation.expectedBatchDrawings > 0) {
                         FeasibilityCard(
                             estimate = validation.expectedBatchDrawings,
                             expensive = validation.requiresExpensiveOverride,

@@ -1,6 +1,5 @@
 package dev.marty.lotz.sim.engine
 
-import kotlinx.datetime.daysUntil
 import kotlin.math.roundToInt
 
 /** A [min, median, mean, p90, p99, max] summary of a batch's per-run Long-valued outcomes. */
@@ -94,6 +93,14 @@ data class BatchStats(
     val tierHitRates: Map<String, Double>,
     val jackpotWinFraction: Double,
     val untilJackpot: UntilJackpotStats?,
+    /** False when runs came from [AnalyticSimulator]: won/net/histogram are meaningless zeros. */
+    val winningsTracked: Boolean,
+    /** Runs in which the player hit the jackpot at least once. */
+    val jackpotWinners: Int,
+    /** Sum of drawings played across all runs. */
+    val totalDrawingsPlayed: Long,
+    /** Sum of each tier's win count across all runs (Long: analytic runs can span millennia). */
+    val tierTotalCounts: Map<String, Long>,
 ) {
     companion object {
         private const val HISTOGRAM_BUCKET_COUNT = 20
@@ -109,13 +116,14 @@ data class BatchStats(
             val totalWon = summaries.sumOf { it.totalWonCents }
             val totalDrawings = drawingsValues.sum()
 
-            val tierHitRates = summaries
+            val tierTotalCounts = summaries
                 .flatMap { it.tierWinCounts.entries }
                 .groupBy({ it.key }, { it.value })
-                .mapValues { (_, counts) -> counts.sum().toDouble() / totalDrawings }
+                .mapValues { (_, counts) -> counts.sumOf { count -> count.toLong() } }
+            val tierHitRates = tierTotalCounts.mapValues { (_, count) -> count.toDouble() / totalDrawings }
 
             val untilJackpot = if (strategy.stopCondition is StopCondition.UntilJackpot) {
-                val years = summaries.map { it.startDate.daysUntil(it.endDate) / 365.2425 }
+                val years = summaries.map { it.yearsElapsed }
                 UntilJackpotStats(
                     drawingsToJackpot = Distribution.of(drawingsValues),
                     yearsToJackpot = DoubleDistribution.of(years),
@@ -136,6 +144,10 @@ data class BatchStats(
                 tierHitRates = tierHitRates,
                 jackpotWinFraction = summaries.count { it.jackpotWon }.toDouble() / summaries.size,
                 untilJackpot = untilJackpot,
+                winningsTracked = summaries.all { it.winningsTracked },
+                jackpotWinners = summaries.count { it.jackpotWon },
+                totalDrawingsPlayed = totalDrawings,
+                tierTotalCounts = tierTotalCounts,
             )
         }
 

@@ -41,8 +41,15 @@ object SimulationEngine {
         marketModel: MarketModel = MarketModel(),
         onProgress: ((DrawingProgress) -> Unit)? = null,
     ): RunResult {
+        if (!strategy.tracking.trackWinnings) {
+            return AnalyticSimulator.run(strategy, seed, startDate, onProgress)
+        }
+
         val game = strategy.game
         val rng = Random(seed)
+        // Resolved before the loop so RandomOnce replays one pick every drawing. Consuming the rng
+        // here (RandomOnce only) is part of this path's determinism contract.
+        val numberChoice = resolveNumberChoice(strategy, rng)
         val timeline = BoundedTimeline(MAX_TIMELINE_POINTS)
         val events = ArrayDeque<SimEvent>()
 
@@ -113,7 +120,7 @@ object SimulationEngine {
                 val secondDraw = doublePlayOption?.let { DrawingGenerator.draw(game, rng) }
 
                 repeat(strategy.entriesPerDrawing) {
-                    val ticket = buildTicket(strategy, rng)
+                    val ticket = buildTicket(strategy, numberChoice, rng)
                     val result = PrizeEvaluator.evaluate(game, ticket, draw, sharedDrawnMultiplier)
                     if (result.isJackpotWin) {
                         playerHitJackpot = true
@@ -192,24 +199,38 @@ object SimulationEngine {
             jackpotCashCents = jackpotCashCents,
             timeline = timeline.toList(),
             notableEvents = events.toList(),
+            fixedNumbers = numberChoice as? NumberChoice.Fixed,
         )
     }
 
-    private fun nextDrawDate(from: LocalDate, drawDays: Set<DayOfWeek>): LocalDate {
+    internal fun nextDrawDate(from: LocalDate, drawDays: Set<DayOfWeek>): LocalDate {
         var date = from
         while (date.dayOfWeek !in drawDays) date = date.plus(DatePeriod(days = 1))
         return date
     }
 
-    private fun buildTicket(strategy: PlayerStrategy, rng: Random): Ticket {
+    /** Resolves [NumberChoice.RandomOnce] to a concrete random [NumberChoice.Fixed] pick. */
+    internal fun resolveNumberChoice(strategy: PlayerStrategy, rng: Random): NumberChoice =
+        when (strategy.numberChoice) {
+            NumberChoice.RandomOnce -> {
+                val game = strategy.game
+                val main = DrawingGenerator.distinctNumbers(game.mainPool, game.mainPick, rng)
+                val bonus = if (game.bonusPool > 0) rng.nextInt(1, game.bonusPool + 1) else null
+                NumberChoice.Fixed(main, bonus)
+            }
+            else -> strategy.numberChoice
+        }
+
+    private fun buildTicket(strategy: PlayerStrategy, numberChoice: NumberChoice, rng: Random): Ticket {
         val game = strategy.game
-        val (mainNumbers, bonusNumber) = when (val choice = strategy.numberChoice) {
+        val (mainNumbers, bonusNumber) = when (numberChoice) {
             NumberChoice.QuickPick -> {
                 val main = DrawingGenerator.distinctNumbers(game.mainPool, game.mainPick, rng)
                 val bonus = if (game.bonusPool > 0) rng.nextInt(1, game.bonusPool + 1) else null
                 main to bonus
             }
-            is NumberChoice.Fixed -> choice.mainNumbers to choice.bonusNumber
+            is NumberChoice.Fixed -> numberChoice.mainNumbers to numberChoice.bonusNumber
+            NumberChoice.RandomOnce -> error("RandomOnce is resolved to Fixed at run start")
         }
         val bundledMultiplierOption = strategy.optionIds.firstNotNullOfOrNull { id ->
             (game.options.first { it.id == id } as? GameOption.Multiplier)?.takeIf { it.priceCentsPerPlay == 0L }

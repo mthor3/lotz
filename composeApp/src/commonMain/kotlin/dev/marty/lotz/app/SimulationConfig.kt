@@ -5,6 +5,7 @@ import dev.marty.lotz.sim.engine.NumberChoice
 import dev.marty.lotz.sim.engine.PlayFrequency
 import dev.marty.lotz.sim.engine.PlayerStrategy
 import dev.marty.lotz.sim.engine.StopCondition
+import dev.marty.lotz.sim.engine.TrackingOptions
 import dev.marty.lotz.sim.rules.GameDefinition
 import dev.marty.lotz.sim.rules.Games
 import kotlinx.datetime.DatePeriod
@@ -16,6 +17,8 @@ enum class FrequencyMode { EveryDrawing, EveryNthDrawing }
 enum class StopKind { Budget, Duration, UntilJackpot }
 
 enum class DurationUnit { Months, Years }
+
+enum class PickMode { NewEachDraw, SameEveryDraw }
 
 data class SimulationConfig(
     val gameId: String = Games.megabucks.id,
@@ -32,7 +35,31 @@ data class SimulationConfig(
     val reinvestWinnings: Boolean = false,
     val seedText: String = "",
     val allowExpensiveUntilJackpot: Boolean = false,
+    val pickMode: PickMode = PickMode.NewEachDraw,
+    /** Null = automatic: follows [defaultTrackWinnings] until the user touches the toggle. */
+    val trackWinnings: Boolean? = null,
+    val trackSpend: Boolean = true,
 )
+
+/**
+ * Winnings tracking defaults off where per-drawing simulation is prohibitively long and the money
+ * detail uninteresting: until-jackpot runs and durations beyond 50 years.
+ */
+fun defaultTrackWinnings(config: SimulationConfig): Boolean = when (config.stopKind) {
+    StopKind.UntilJackpot -> false
+    StopKind.Duration -> {
+        val value = config.durationText.toIntOrNull()
+        val months = when (config.durationUnit) {
+            DurationUnit.Months -> value
+            DurationUnit.Years -> value?.let { it * 12 }
+        }
+        months == null || months <= 50 * 12
+    }
+    StopKind.Budget -> true
+}
+
+fun resolvedTrackWinnings(config: SimulationConfig): Boolean =
+    config.trackWinnings ?: defaultTrackWinnings(config)
 
 data class SimulationRequest(
     val strategy: PlayerStrategy,
@@ -144,15 +171,20 @@ fun validateSimulationConfig(config: SimulationConfig): ConfigValidation {
     val validOptionIds = game.options.mapTo(mutableSetOf()) { it.id }
     val optionIds = config.selectedOptionIds.intersect(validOptionIds)
 
+    val trackWinnings = resolvedTrackWinnings(config)
     val strategy = if (entries != null && frequency != null && stopCondition != null) {
         PlayerStrategy(
             game = game,
             entriesPerDrawing = entries,
             optionIds = optionIds,
-            numberChoice = NumberChoice.QuickPick,
+            numberChoice = when (config.pickMode) {
+                PickMode.NewEachDraw -> NumberChoice.QuickPick
+                PickMode.SameEveryDraw -> NumberChoice.RandomOnce
+            },
             frequency = frequency,
             stopCondition = stopCondition,
-            reinvestWinnings = config.reinvestWinnings && config.stopKind == StopKind.Budget,
+            reinvestWinnings = config.reinvestWinnings && config.stopKind == StopKind.Budget && trackWinnings,
+            tracking = TrackingOptions(trackWinnings = trackWinnings, trackSpend = config.trackSpend),
         )
     } else {
         null

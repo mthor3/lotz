@@ -102,6 +102,9 @@ object BatchRunner {
      */
     fun estimateExpectedDrawings(strategy: PlayerStrategy, runs: Int): Long {
         if (strategy.stopCondition !is StopCondition.UntilJackpot) return 0L
+        // With winnings untracked, runs take the AnalyticSimulator path and cost O(1) regardless
+        // of expected drawings, so the guardrail does not apply.
+        if (!strategy.tracking.trackWinnings) return 0L
 
         val perEntryOdds = strategy.game.oddsOneIn(strategy.game.jackpotTier)
         val perDrawingWinProbability = (1.0 - (1.0 - 1.0 / perEntryOdds).pow(strategy.entriesPerDrawing))

@@ -1,6 +1,7 @@
 package dev.marty.lotz.sim.engine
 
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.daysUntil
 
 /** One (decimated) sample of a run's running totals, for charting. */
 data class TimelinePoint(
@@ -51,9 +52,25 @@ data class RunResult(
     val jackpotCashCents: Long,
     val timeline: List<TimelinePoint>,
     val notableEvents: List<SimEvent>,
+    /** False when the run was sampled analytically ([TrackingOptions.trackWinnings] off): won/net
+     * are meaningless zeros and timeline/events are empty — display layers should hide them. */
+    val winningsTracked: Boolean = true,
+    /** The concrete pick when the strategy replays one set of numbers every drawing
+     * ([NumberChoice.Fixed] as given, or [NumberChoice.RandomOnce] as resolved at run start). */
+    val fixedNumbers: NumberChoice.Fixed? = null,
+    /** Set by [AnalyticSimulator] runs, whose spans can exceed what [LocalDate] arithmetic
+     * supports (endDate is then clamped). Null for loop runs; read via [yearsElapsed]. */
+    val simulatedYears: Double? = null,
 ) {
     val netCents: Long get() = totalWonCents - totalSpentCents
 }
+
+/** Simulated span in years: [RunResult.simulatedYears] when set, else derived from the dates. */
+val RunResult.yearsElapsed: Double get() = simulatedYears ?: (startDate.daysUntil(endDate) / DAYS_PER_YEAR)
+
+val RunSummary.yearsElapsed: Double get() = simulatedYears ?: (startDate.daysUntil(endDate) / DAYS_PER_YEAR)
+
+const val DAYS_PER_YEAR = 365.2425
 
 /**
  * A [RunResult] stripped of its timeline/events, for retaining every run of a large [BatchRunner]
@@ -70,6 +87,8 @@ data class RunSummary(
     val jackpotWon: Boolean,
     val jackpotAnnuityCents: Long,
     val jackpotCashCents: Long,
+    val winningsTracked: Boolean = true,
+    val simulatedYears: Double? = null,
 ) {
     val netCents: Long get() = totalWonCents - totalSpentCents
 }
@@ -85,4 +104,6 @@ fun RunResult.toSummary(): RunSummary = RunSummary(
     jackpotWon = jackpotWon,
     jackpotAnnuityCents = jackpotAnnuityCents,
     jackpotCashCents = jackpotCashCents,
+    winningsTracked = winningsTracked,
+    simulatedYears = simulatedYears,
 )

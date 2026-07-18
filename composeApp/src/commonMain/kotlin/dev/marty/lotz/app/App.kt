@@ -50,6 +50,7 @@ fun App() {
             AppScreen.Results -> ResultsScreen(
                 state = state,
                 onConfigureAnother = viewModel::configureAnotherRun,
+                onRunAgain = viewModel::startRun,
             )
         }
     }

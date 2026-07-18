@@ -10,7 +10,25 @@ sealed interface NumberChoice {
 
     /** The same chosen numbers replayed every drawing. */
     data class Fixed(val mainNumbers: Set<Int>, val bonusNumber: Int? = null) : NumberChoice
+
+    /**
+     * Random numbers picked once at run start (from the run's seeded rng), then replayed every
+     * drawing like [Fixed]. The engine resolves this to a concrete [Fixed] pick and reports it on
+     * [RunResult.fixedNumbers].
+     */
+    data object RandomOnce : NumberChoice
 }
+
+/**
+ * What a run measures beyond its stop condition. With [trackWinnings] off the engine skips the
+ * market model and prize evaluation entirely and samples outcomes analytically (see
+ * [AnalyticSimulator]), making even until-jackpot runs near-instant. [trackSpend] is display-level
+ * only: spend is always computed (it is one multiply per drawing, and budget caps need it).
+ */
+data class TrackingOptions(
+    val trackWinnings: Boolean = true,
+    val trackSpend: Boolean = true,
+)
 
 /** How often the player buys tickets, relative to the game's drawing schedule. */
 sealed interface PlayFrequency {
@@ -56,9 +74,13 @@ data class PlayerStrategy(
     val frequency: PlayFrequency = PlayFrequency.EveryDrawing,
     val stopCondition: StopCondition,
     val reinvestWinnings: Boolean = false,
+    val tracking: TrackingOptions = TrackingOptions(),
 ) {
     init {
         require(entriesPerDrawing >= 1) { "entriesPerDrawing must be >= 1" }
+        require(!reinvestWinnings || tracking.trackWinnings) {
+            "reinvestWinnings requires trackWinnings"
+        }
         require(optionIds.all { id -> game.options.any { it.id == id } }) {
             "optionIds must reference options offered by ${game.displayName}"
         }
