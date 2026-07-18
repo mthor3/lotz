@@ -54,3 +54,35 @@ data class RunResult(
 ) {
     val netCents: Long get() = totalWonCents - totalSpentCents
 }
+
+/**
+ * A [RunResult] stripped of its timeline/events, for retaining every run of a large [BatchRunner]
+ * batch in memory without the per-drawing detail that only matters for single-run inspection.
+ */
+data class RunSummary(
+    val seed: Long,
+    val startDate: LocalDate,
+    val endDate: LocalDate,
+    val drawingsPlayed: Int,
+    val totalSpentCents: Long,
+    val totalWonCents: Long,
+    val tierWinCounts: Map<String, Int>,
+    val jackpotWon: Boolean,
+    val jackpotAnnuityCents: Long,
+    val jackpotCashCents: Long,
+) {
+    val netCents: Long get() = totalWonCents - totalSpentCents
+}
+
+fun RunResult.toSummary(): RunSummary = RunSummary(
+    seed = seed,
+    startDate = startDate,
+    endDate = endDate,
+    drawingsPlayed = drawingsPlayed,
+    totalSpentCents = totalSpentCents,
+    totalWonCents = totalWonCents,
+    tierWinCounts = tierWinCounts,
+    jackpotWon = jackpotWon,
+    jackpotAnnuityCents = jackpotAnnuityCents,
+    jackpotCashCents = jackpotCashCents,
+)
