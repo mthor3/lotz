@@ -2,6 +2,8 @@ package dev.marty.lotz.app
 
 import dev.marty.lotz.sim.rules.GameDefinition
 import dev.marty.lotz.sim.rules.PrizeTier
+import kotlin.math.expm1
+import kotlin.math.ln1p
 import kotlin.math.roundToLong
 
 fun formatMoney(cents: Long): String {
@@ -18,6 +20,14 @@ fun formatWholeNumber(value: Long): String =
 
 fun formatOdds(game: GameDefinition): String =
     "1 in ${formatWholeNumber(game.oddsOneIn(game.jackpotTier).roundToLong())}"
+
+/** Jackpot odds for one drawing after buying [entries] independent entries. */
+fun formatOddsForEntries(game: GameDefinition, entries: Int): String {
+    require(entries > 0) { "entries must be positive" }
+    val singleEntryOdds = game.oddsOneIn(game.jackpotTier)
+    val probability = -expm1(entries * ln1p(-1.0 / singleEntryOdds))
+    return formatOneIn(probability)
+}
 
 fun formatMatrix(game: GameDefinition): String = if (game.bonusPool > 0) {
     "Pick ${game.mainPick} of ${game.mainPool} + 1 of ${game.bonusPool}"

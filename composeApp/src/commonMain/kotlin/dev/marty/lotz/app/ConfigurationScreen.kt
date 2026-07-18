@@ -22,6 +22,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -92,6 +93,18 @@ fun ConfigurationScreen(
                         onValueChange = { value -> onConfigChange { it.copy(entriesText = value) } },
                         modifier = Modifier.fillMaxWidth(),
                         label = { Text("Entries per drawing") },
+                        trailingIcon = {
+                            Column {
+                                IconButton(
+                                    onClick = { updateEntriesBy(config.entriesText, 1, onConfigChange) },
+                                    enabled = config.entriesText.toIntOrNull()?.let { it < MAX_ENTRIES_PER_DRAWING } ?: false,
+                                ) { Text("▲") }
+                                IconButton(
+                                    onClick = { updateEntriesBy(config.entriesText, -1, onConfigChange) },
+                                    enabled = config.entriesText.toIntOrNull()?.let { it > 1 } ?: false,
+                                ) { Text("▼") }
+                            }
+                        },
                         supportingText = { FieldHelp(validation.errors[ConfigFields.ENTRIES]) },
                         isError = ConfigFields.ENTRIES in validation.errors,
                         singleLine = true,
@@ -328,7 +341,8 @@ fun ConfigurationScreen(
                     ) {
                         Text(
                             "${request.strategy.entriesPerDrawing} ${if (request.strategy.entriesPerDrawing == 1) "entry" else "entries"} · " +
-                                "${formatMoney(request.strategy.costPerDrawingCents)} each played drawing",
+                                "${formatMoney(request.strategy.costPerDrawingCents)} each played drawing · " +
+                                "Jackpot odds ${formatOddsForEntries(request.strategy.game, request.strategy.entriesPerDrawing)}",
                             modifier = Modifier.padding(14.dp),
                             style = MaterialTheme.typography.bodyMedium,
                         )
@@ -353,6 +367,16 @@ fun ConfigurationScreen(
             }
         }
     }
+}
+
+private fun updateEntriesBy(
+    entriesText: String,
+    delta: Int,
+    onConfigChange: ((SimulationConfig) -> SimulationConfig) -> Unit,
+) {
+    val entries = entriesText.toIntOrNull() ?: return
+    val updated = (entries + delta).coerceIn(1, MAX_ENTRIES_PER_DRAWING)
+    onConfigChange { it.copy(entriesText = updated.toString()) }
 }
 
 @Composable

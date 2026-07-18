@@ -90,7 +90,7 @@ object ConfigFields {
     const val OVERRIDE = "override"
 }
 
-private const val MAX_ENTRIES_PER_DRAWING = 1_000
+const val MAX_ENTRIES_PER_DRAWING = 1_000
 private const val MAX_FREQUENCY_INTERVAL = 1_000
 private const val MAX_BATCH_RUNS = 10_000
 private const val MAX_DURATION_MONTHS = 1_200
