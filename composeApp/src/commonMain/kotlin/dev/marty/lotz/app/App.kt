@@ -46,8 +46,8 @@ fun App() {
                 onOptionToggled = viewModel::toggleOption,
                 onRun = viewModel::startRun,
             )
-            AppScreen.Running -> RunningScreen(state = state, onCancel = viewModel::cancelRun)
-            AppScreen.Results -> ResultsPlaceholderScreen(
+            AppScreen.Running -> RunningScreen(state = state, onCancel = viewModel::cancelRun, onElapsedTick = viewModel::refreshElapsed)
+            AppScreen.Results -> ResultsScreen(
                 state = state,
                 onConfigureAnother = viewModel::configureAnotherRun,
             )

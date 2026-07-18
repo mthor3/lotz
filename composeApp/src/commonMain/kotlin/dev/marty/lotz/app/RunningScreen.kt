@@ -16,13 +16,21 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 
 @Composable
-fun RunningScreen(state: AppUiState, onCancel: () -> Unit) {
+fun RunningScreen(state: AppUiState, onCancel: () -> Unit, onElapsedTick: () -> Unit = {}) {
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(1_000)
+            onElapsedTick()
+        }
+    }
     Box(Modifier.fillMaxSize().padding(24.dp)) {
         Column(
             modifier = Modifier.align(Alignment.Center).fillMaxWidth().widthIn(max = 520.dp),
@@ -36,6 +44,7 @@ fun RunningScreen(state: AppUiState, onCancel: () -> Unit) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Text("Elapsed ${formatElapsed(state.elapsedMillis)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
             when (val progress = state.progress) {
                 is SimulationProgress.Single -> {
                     Text("${formatWholeNumber(progress.progress.drawingsSimulated.toLong())} drawings simulated")
@@ -55,4 +64,9 @@ fun RunningScreen(state: AppUiState, onCancel: () -> Unit) {
             }
         }
     }
+}
+
+private fun formatElapsed(millis: Long): String {
+    val totalSeconds = millis.coerceAtLeast(0L) / 1_000
+    return "${(totalSeconds / 60).toString().padStart(2, '0')}:${(totalSeconds % 60).toString().padStart(2, '0')}"
 }

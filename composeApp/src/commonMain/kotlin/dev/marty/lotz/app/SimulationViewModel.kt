@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.time.Clock
 import kotlin.random.Random
 
 enum class AppScreen { Configuration, Running, Results }
@@ -39,6 +40,8 @@ data class AppUiState(
     val progress: SimulationProgress? = null,
     val result: SimulationResult? = null,
     val activeSeed: Long? = null,
+    val elapsedMillis: Long = 0L,
+    val runStartedAtMillis: Long = 0L,
     val message: String? = null,
 )
 
@@ -88,12 +91,15 @@ class SimulationViewModel(
 
         val seed = request.requestedSeed ?: Random.Default.nextLong()
         val generation = ++runGeneration
+        val startedAt = Clock.System.now().toEpochMilliseconds()
         mutableState.update {
             it.copy(
                 screen = AppScreen.Running,
                 progress = null,
                 result = null,
                 activeSeed = seed,
+                elapsedMillis = 0L,
+                runStartedAtMillis = startedAt,
                 message = null,
             )
         }
@@ -128,7 +134,12 @@ class SimulationViewModel(
                     }
                 }
                 mutableState.update {
-                    it.copy(screen = AppScreen.Results, progress = null, result = result)
+                    it.copy(
+                        screen = AppScreen.Results,
+                        progress = null,
+                        result = result,
+                        elapsedMillis = Clock.System.now().toEpochMilliseconds() - startedAt,
+                    )
                 }
             } catch (_: CancellationException) {
                 // cancelRun already returns the user to configuration.
@@ -144,6 +155,13 @@ class SimulationViewModel(
             } finally {
                 if (generation == runGeneration) activeJob = null
             }
+        }
+    }
+
+    fun refreshElapsed() {
+        val state = mutableState.value
+        if (state.screen == AppScreen.Running && activeJob?.isActive == true) {
+            mutableState.update { it.copy(elapsedMillis = Clock.System.now().toEpochMilliseconds() - it.runStartedAtMillis) }
         }
     }
 
